@@ -15,7 +15,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -36,7 +36,8 @@
   "homepage": "https://github.com/podraven/y-fire#readme",
   "devDependencies": {
     "@types/simple-peer": "^9.11.8",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "tsup": "^8.0.0"
   },
   "dependencies": {
     "idb-keyval": "^6.2.1",
