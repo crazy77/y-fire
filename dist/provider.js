@@ -1,12 +1,3 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 import { getFirestore, onSnapshot, doc, setDoc, Bytes, } from "@firebase/firestore";
 import { collection } from "firebase/firestore";
 import * as Y from "yjs";
@@ -48,10 +39,10 @@ export class FireProvider extends ObservableV2 {
         this.firebaseDataLastUpdatedAt = new Date().getTime();
         this.instanceConnection = new ObservableV2();
         this.ready = false;
-        this.init = () => __awaiter(this, void 0, void 0, function* () {
+        this.init = async () => {
             this.trackData(); // initiate this before creating instance, so that users with read permissions can also view the document
             try {
-                const data = yield initiateInstance(this.db, this.documentPath);
+                const data = await initiateInstance(this.db, this.documentPath);
                 this.instanceConnection.on("closed", this.trackConnections);
                 this.uid = data.uid;
                 this.timeOffset = data.offset;
@@ -62,18 +53,18 @@ export class FireProvider extends ObservableV2 {
                 this.consoleHandler("Could not connect to a peer network.");
                 this.kill(true); // destroy provider but keep the read-only stream alive
             }
-        });
-        this.syncLocal = () => __awaiter(this, void 0, void 0, function* () {
+        };
+        this.syncLocal = async () => {
             try {
-                const local = yield getLocal(this.documentPath);
+                const local = await getLocal(this.documentPath);
                 if (local)
                     Y.applyUpdate(this.doc, local, { key: "local-sync" });
             }
             catch (e) {
                 this.consoleHandler("get local error", e);
             }
-        });
-        this.saveToLocal = () => __awaiter(this, void 0, void 0, function* () {
+        };
+        this.saveToLocal = async () => {
             try {
                 const currentDoc = Y.encodeStateAsUpdate(this.doc);
                 setLocal(this.documentPath, currentDoc);
@@ -81,15 +72,15 @@ export class FireProvider extends ObservableV2 {
             catch (e) {
                 this.consoleHandler("set local error", e);
             }
-        });
-        this.deleteLocal = () => __awaiter(this, void 0, void 0, function* () {
+        };
+        this.deleteLocal = async () => {
             try {
                 delLocal(this.documentPath);
             }
             catch (e) {
                 this.consoleHandler("del local error", e);
             }
-        });
+        };
         this.initiateHandler = () => {
             this.consoleHandler("FireProvider initiated!");
             this.awareness.on("update", this.awarenessUpdateHandler);
@@ -150,13 +141,13 @@ export class FireProvider extends ObservableV2 {
         this.reconnect = () => {
             if (this.recreateTimeout)
                 clearTimeout(this.recreateTimeout);
-            this.recreateTimeout = setTimeout(() => __awaiter(this, void 0, void 0, function* () {
+            this.recreateTimeout = setTimeout(async () => {
                 this.consoleHandler("triggering reconnect", this.uid);
                 this.destroy();
                 this.init();
-            }), 200);
+            }, 200);
         };
-        this.trackConnections = () => __awaiter(this, void 0, void 0, function* () {
+        this.trackConnections = async () => {
             const clients = this.clients.length;
             let connected = 0;
             Object.values(this.peersRTC.receivers).forEach((receiver) => {
@@ -172,7 +163,7 @@ export class FireProvider extends ObservableV2 {
                 // trigger re-generation of the graph/mesh
                 this.reconnect();
             }
-        });
+        };
         this.connectToPeers = (newPeers, oldPeers, isCaller) => {
             if (!newPeers)
                 return new Set([]);
@@ -186,18 +177,18 @@ export class FireProvider extends ObservableV2 {
                 this.peersRTC[peersType] = {};
             if (getNewPeers.obselete && getNewPeers.obselete.length) {
                 // Old peers, remove them
-                getNewPeers.obselete.forEach((peerUid) => __awaiter(this, void 0, void 0, function* () {
+                getNewPeers.obselete.forEach(async (peerUid) => {
                     if (this.peersRTC[peersType][peerUid]) {
-                        yield this.peersRTC[peersType][peerUid].destroy();
+                        await this.peersRTC[peersType][peerUid].destroy();
                         delete this.peersRTC[peersType][peerUid];
                     }
-                }));
+                });
             }
             if (getNewPeers.new && getNewPeers.new.length) {
                 // New peers, initiate new connection to them
-                getNewPeers.new.forEach((peerUid) => __awaiter(this, void 0, void 0, function* () {
+                getNewPeers.new.forEach(async (peerUid) => {
                     if (this.peersRTC[peersType][peerUid]) {
-                        yield this.peersRTC[peersType][peerUid].destroy();
+                        await this.peersRTC[peersType][peerUid].destroy();
                         delete this.peersRTC[peersType][peerUid];
                     }
                     this.peersRTC[peersType][peerUid] = new WebRtc({
@@ -210,7 +201,7 @@ export class FireProvider extends ObservableV2 {
                         peerUid,
                         isCaller,
                     });
-                }));
+                });
             }
             return new Set(newPeers);
         };
@@ -234,11 +225,11 @@ export class FireProvider extends ObservableV2 {
                 }
             }
         };
-        this.saveToFirestore = () => __awaiter(this, void 0, void 0, function* () {
+        this.saveToFirestore = async () => {
             try {
                 // current document to firestore
                 const ref = doc(this.db, this.documentPath);
-                yield setDoc(ref, this.documentMapper(Bytes.fromUint8Array(Y.encodeStateAsUpdate(this.doc))), { merge: true });
+                await setDoc(ref, this.documentMapper(Bytes.fromUint8Array(Y.encodeStateAsUpdate(this.doc))), { merge: true });
                 this.deleteLocal(); // We have successfully saved to Firestore, empty indexedDb for now
             }
             catch (error) {
@@ -248,7 +239,7 @@ export class FireProvider extends ObservableV2 {
                 if (this.onSaving)
                     this.onSaving(false);
             }
-        });
+        };
         this.sendToFirestoreQueue = () => {
             // if cache settles down, save document to firebase
             if (this.firestoreTimeout)

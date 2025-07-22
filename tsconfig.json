@@ -10,7 +10,11 @@
     "declarationMap": true,
     "strict": false,
     "esModuleInterop": true,
-    "moduleResolution":"Node",
-    "target": "ES6"
-  },
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "Bundler",
+    "module": "ESNext",
+    "target": "ES2020",
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  }
 }

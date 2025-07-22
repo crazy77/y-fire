@@ -1,12 +1,3 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 import * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
 import { getFirestore, doc, onSnapshot, setDoc, deleteDoc, } from "@firebase/firestore";
@@ -54,12 +45,12 @@ export class WebRtc extends ObservableV2 {
                 }
             }, this.idleThreshold);
         };
-        this.createKey = () => __awaiter(this, void 0, void 0, function* () {
-            this.peerKey = yield generateKey(this.isCaller ? this.uid : this.peerUid, this.isCaller ? this.peerUid : this.uid);
+        this.createKey = async () => {
+            this.peerKey = await generateKey(this.isCaller ? this.uid : this.peerUid, this.isCaller ? this.peerUid : this.uid);
             // this.consoleHandler("key", this.peerKey);
             if (!this.peerKey)
                 this.destroy();
-        });
+        };
         this.createPeer = (config) => {
             this.peer = new SimplePeer(config);
         };
@@ -70,14 +61,14 @@ export class WebRtc extends ObservableV2 {
                 trickle: false,
                 channelName: `${this.documentPath}:${this.uid}_${this.peerUid}`,
             });
-            this.peer.on("signal", (signal) => __awaiter(this, void 0, void 0, function* () {
+            this.peer.on("signal", async (signal) => {
                 /**
                  * Write signal to ./instances/{peerUid}/calls/{uid}
                  */
                 // this.consoleHandler("Send call to peer");
                 try {
                     const callRef = doc(this.db, `${this.documentPath}/instances/${this.peerUid}/calls`, this.uid);
-                    yield setDoc(callRef, { signal });
+                    await setDoc(callRef, { signal });
                     setTimeout(() => {
                         deleteDoc(callRef);
                     }, this.idleThreshold); // delete call after defined miliseconds, if handshake hasn't deleted it yet
@@ -85,7 +76,7 @@ export class WebRtc extends ObservableV2 {
                 catch (error) {
                     this.errorHandler(error);
                 }
-            }));
+            });
         };
         this.replyPeer = () => {
             this.createPeer({
@@ -93,14 +84,14 @@ export class WebRtc extends ObservableV2 {
                 config: this.ice,
                 trickle: false,
             });
-            this.peer.on("signal", (signal) => __awaiter(this, void 0, void 0, function* () {
+            this.peer.on("signal", async (signal) => {
                 /**
                  * Write signal to ./instances/{peerUid}
                  */
                 // this.consoleHandler("Reply with answer");
                 try {
                     const answerRef = doc(this.db, `${this.documentPath}/instances/${this.peerUid}/answers`, this.uid);
-                    yield setDoc(answerRef, { signal });
+                    await setDoc(answerRef, { signal });
                     setTimeout(() => {
                         deleteDoc(answerRef);
                     }, this.idleThreshold); // delete call after defined miliseconds, if handshake hasn't deleted it yet
@@ -108,7 +99,7 @@ export class WebRtc extends ObservableV2 {
                 catch (error) {
                     this.errorHandler(error);
                 }
-            }));
+            });
         };
         this.handshake = () => {
             this.unsubscribeHandshake = onSnapshot(doc(this.db, `${this.documentPath}/instances/${this.uid}/${this.isCaller ? "answers" : "calls"}/${this.peerUid}`), // track own uid not peerUid
@@ -165,24 +156,24 @@ export class WebRtc extends ObservableV2 {
             this.instanceConnection.emit("closed", [true]);
             this.destroy();
         };
-        this.sendData = ({ message, data, }) => __awaiter(this, void 0, void 0, function* () {
+        this.sendData = async ({ message, data, }) => {
             const msg = {};
             msg.uid = this.uid;
             if (message)
                 msg.message = message;
             if (data) {
-                msg.data = yield Uint8ArrayToBase64(data);
+                msg.data = await Uint8ArrayToBase64(data);
             }
-            const encrypted = yield encryptData(msg, this.peerKey);
+            const encrypted = await encryptData(msg, this.peerKey);
             if (this.connection === "connected" && encrypted)
                 this.peer.send(encrypted);
-        });
-        this.handleReceivingData = (data) => __awaiter(this, void 0, void 0, function* () {
+        };
+        this.handleReceivingData = async (data) => {
             try {
-                const decrypted = yield decryptData(data, this.peerKey);
+                const decrypted = await decryptData(data, this.peerKey);
                 if (decrypted) {
                     if (decrypted.data) {
-                        decrypted.data = yield base64ToUint8Array(decrypted.data);
+                        decrypted.data = await base64ToUint8Array(decrypted.data);
                     }
                     if (decrypted.message === "awareness" && decrypted.data) {
                         awarenessProtocol.applyAwarenessUpdate(this.awareness, decrypted.data, decrypted.uid);
@@ -196,7 +187,7 @@ export class WebRtc extends ObservableV2 {
             catch (error) {
                 this.errorHandler(error);
             }
-        });
+        };
         this.consoleHandler = (message, data = null) => {
             console.log("WebRTC", this.documentPath, `this client: ${this.uid}`, `peer client: ${this.peerUid}`, message, data);
         };
@@ -218,19 +209,14 @@ export class WebRtc extends ObservableV2 {
         // this.consoleHandler("Peer initiated");
         this.initPeer();
     }
-    destroy() {
-        const _super = Object.create(null, {
-            destroy: { get: () => super.destroy }
-        });
-        return __awaiter(this, void 0, void 0, function* () {
-            // this.consoleHandler("destroyed");
-            if (this.clock)
-                clearTimeout(this.clock);
-            if (this.peer)
-                this.peer.destroy();
-            this.unsubHandshake();
-            this.deleteSignals(); // Delete calls and answers
-            _super.destroy.call(this);
-        });
+    async destroy() {
+        // this.consoleHandler("destroyed");
+        if (this.clock)
+            clearTimeout(this.clock);
+        if (this.peer)
+            this.peer.destroy();
+        this.unsubHandshake();
+        this.deleteSignals(); // Delete calls and answers
+        super.destroy();
     }
 }
