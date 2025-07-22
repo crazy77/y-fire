@@ -1,6 +1,6 @@
 import * as Y from "yjs";
 import * as awarenessProtocol from "y-protocols/awareness";
-import { FirebaseApp } from "@firebase/app";
+import { FirebaseApp } from "firebase/app";
 import {
   getFirestore,
   doc,
@@ -11,7 +11,7 @@ import {
   Unsubscribe,
   DocumentData,
   DocumentReference,
-} from "@firebase/firestore";
+} from "firebase/firestore";
 import { ObservableV2 } from "lib0/observable";
 import SimplePeer from "simple-peer-light";
 import {

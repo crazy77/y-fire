@@ -1,5 +1,5 @@
-import { FirebaseApp } from '@firebase/app';
-import { Firestore, Bytes } from '@firebase/firestore';
+import { FirebaseApp } from 'firebase/app';
+import { Firestore, Bytes } from 'firebase/firestore';
 import * as Y from 'yjs';
 import { ObservableV2 } from 'lib0/observable';
 import * as awarenessProtocol from 'y-protocols/awareness';

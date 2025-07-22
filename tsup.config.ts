@@ -6,7 +6,21 @@ export default defineConfig({
   dts: true,
   clean: true,
   outDir: 'dist',
-  external: ['firebase', 'yjs', 'y-protocols'],
+  external: [
+    'firebase',
+    'firebase/app',
+    'firebase/firestore',
+    '@firebase/app',
+    '@firebase/firestore',
+    'yjs',
+    'y-protocols',
+    'y-protocols/awareness',
+    'lib0/observable',
+    'idb-keyval',
+    'simple-peer-light'
+  ],
   treeshake: true,
   sourcemap: true,
+  target: 'es2020',
+  platform: 'neutral',
 }) 

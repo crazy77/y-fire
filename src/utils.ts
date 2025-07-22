@@ -8,7 +8,7 @@ import {
   Firestore,
   Timestamp,
   runTransaction,
-} from "@firebase/firestore";
+} from "firebase/firestore";
 
 import * as encoding from "lib0/encoding";
 import * as decoding from "lib0/decoding";
